@@ -224,7 +224,7 @@ void read_time(){
 	free(time_contents);
 }
 
-void CreateThread(long id){
+void create_thread(long id){
 	pthread_t thread;
 	pthread_mutex_lock(&mutex);
 	pthread_create(&thread, NULL, write_time, (void *)id);
@@ -257,7 +257,7 @@ void game_loop(struct Map* map){
 		long thread_count = 0;
 		while (strcmp(user_input, "time") == 0){
 			thread_count += 1;
-			CreateThread(thread_count);
+			create_thread(thread_count);
 			read_time();
 			printf("WHERE TO? >");
 			scanf("%255s", user_input);
