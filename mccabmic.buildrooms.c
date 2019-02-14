@@ -7,8 +7,10 @@
 
 #define MAX_ROOMS 10
 #define PLAY_ROOMS 7
+#define MIN_CONNECTIONS 3
+#define MAX_CONNECTIONS 6
 
-/* ENUMS AND DATA STRUCTURES */
+/*--------------------------DATA & GLOBALS ----------------------------*/
 enum room_type {START_ROOM, MID_ROOM, END_ROOM};
 const char* room_names[MAX_ROOMS] = {
 	"Lakeview",
@@ -31,13 +33,13 @@ struct Room {
 	int neighbors[PLAY_ROOMS];
 };
 
-/* UTILITY AND DEBUGGING FUNCTIONS */
+/*-------------------------------UTILITY ----------------------------*/
 void swap(int *a, int *b){
 	int temp = *a;
 	*a = *b;
 	*b = temp;
 }
-
+/* Utility function to print arrays*/
 void print_array(int *array, int n){
 	int i;
 	for (i = 0; i < n; i++){
@@ -46,6 +48,7 @@ void print_array(int *array, int n){
 	printf("\n");
 }
 
+/* Utility function to print room*/
 void print_room(struct Room printRoom){
 	printf("room id: %d\n", printRoom.id);
 	printf("room name: %s\n", printRoom.name);
@@ -59,6 +62,8 @@ void print_room(struct Room printRoom){
 	printf("\n");
 }
 
+/* shuffles array of values in place*/
+/*source: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle*/
 void shuffle(int *array, int n){
 	int i;
 	int j = 0;
@@ -68,15 +73,18 @@ void shuffle(int *array, int n){
 	}
 }
 
-/* CORE FUNCTIONALITY */
+/*---------------------CORE FUNCTIONALITY ------------------------*/
+/*function takes a struct of uninitialized rooms
+and initializes them in a random order*/
 void init_rooms(struct Room rooms[PLAY_ROOMS]){
 	int random_order[PLAY_ROOMS];
 	int i;
 	for (i = 0; i < PLAY_ROOMS; i++){
 		random_order[i] = i;
 	}
-
 	shuffle(random_order, PLAY_ROOMS);
+
+	/*adjacency list default_connections sets all to 0*/
 	int default_connections[PLAY_ROOMS]= {0};
 	for (i = 0; i < PLAY_ROOMS; i++){
 		rooms[i].id = i;
@@ -85,6 +93,8 @@ void init_rooms(struct Room rooms[PLAY_ROOMS]){
 		rooms[i].numConnections = 0;
 		memcpy(rooms[i].neighbors, default_connections, sizeof(rooms[i].neighbors));
 	}
+	
+	/* easier to do it this way*/
 	rooms[0].type = START_ROOM;
 	rooms[PLAY_ROOMS-1].type = END_ROOM;
 }
@@ -101,12 +111,14 @@ char* createDir(){
 	return directory;
 }
 
-/* GRAPH FUNCTIONS */
+/*---------------------GRAPH FUNCTIONS -------------------------*/
+/*Source:  https://oregonstate.instructure.com/courses/1706555/pages/2-dot-2-program-outlining-in-program-2*/
+/* Thanks again for the outline!*/
 int isGraphFull(struct Room rooms[PLAY_ROOMS]){
 	int full_rooms = 0;
 	int i;
 	for (i = 0; i < PLAY_ROOMS; i++){
-		if (rooms[i].numConnections >= 3 && rooms[i].numConnections < 6){
+		if (rooms[i].numConnections >= MIN_CONNECTIONS && rooms[i].numConnections < MAX_CONNECTIONS){
 			full_rooms += 1;
 		}
 	}
@@ -114,7 +126,7 @@ int isGraphFull(struct Room rooms[PLAY_ROOMS]){
 }
 
 int CanAddConnectionFrom(struct Room* xPtr){
-	return (xPtr->numConnections < 6);
+	return (xPtr->numConnections < MAX_CONNECTIONS);
 }
 
 int ConnectionAlreadyExists(struct Room* xPtr, struct Room* yPtr){
@@ -193,7 +205,6 @@ void writeToDisk(struct Room rooms[PLAY_ROOMS], char* main_directory){
 }
 
 /* MAIN */
-
 int main(){
 	char *main_directory = createDir();
 	srand(time(NULL));

@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
+#include <pthread.h>
 
 #define BUFFER 256
 #define PLAY_ROOMS 7
@@ -148,7 +149,6 @@ struct Map* generate_map(char* directory){
 		fprintf(stderr, "Error, invalid directory provided to generate_map()\n");
 		exit(1);
 	}
-	
 	struct Map* map = malloc(sizeof(struct Map));
 	char myFiles[PLAY_ROOMS][BUFFER];
 	int count = list_of_files(directory, myFiles);
@@ -187,10 +187,15 @@ int find_room(char* name, struct Room rooms[PLAY_ROOMS]){
 void game_loop(struct Map* map){
 	int player = map->room_start;
 	int total_steps = 0;
-	int player_history[256];
+	int player_history[BUFFER];
 	int goal_room = map->room_end;
 	char user_input[BUFFER];
 	
+	pthread_t time_thread;
+	pthread_create(%time_thread, NULL, write_time, NULL);
+	pthread_mutex_init(&time_mutex, NULL);
+	pthread_mutex_lock(&time_mutex);
+
 	do{
 		printf("CURRENT LOCATION: %s\n", map->rooms[player].name);
 		printf("POSSIBLE CONNECTIONS:");
@@ -200,13 +205,22 @@ void game_loop(struct Map* map){
 		}
 		printf(" %s.\n", map->rooms[player].connections[i]);
 		printf("WHERE TO? >");
-
 		memset(user_input, '\0', BUFFER);
 		scanf("%255s", user_input);
 		printf("\n");
 		
 		/*handle time*/
+		while(strcmp(user_input, "time") == 0){ 
+			pthread_mutex_unlock(&time_mutex);
+			pthread_join(time_thread, NULL);
+			pthread_mutex_lock(t:ime_mutex);
+
+			printf("WHERE TO? >");
+			scanf("%255s", user_input);
+		}
+
 		/*handle movement*/
+		
 		int destination = -1;
 		for (i = 0; i < map->rooms[player].numConnections; i++){
 			if (strcmp(user_input, map->rooms[player].connections[i]) == 0){
