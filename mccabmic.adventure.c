@@ -114,11 +114,11 @@ char* get_most_recent(){
 		while ((dir = readdir(directoryPtr)) != NULL){
 			memset(&dirStat, 0, sizeof(dirStat));
 			if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") && strcmp(dir->d_name, "..")){	
-					stat(dir->d_name, &dirStat);
-					if( dirStat.st_mtime > latest){
-						latest = dirStat.st_mtime;
-						strcpy(dirName, dir->d_name);
-					}
+				stat(dir->d_name, &dirStat);
+				if( dirStat.st_mtime > latest){
+					latest = dirStat.st_mtime;
+					strcpy(dirName, dir->d_name);
+				}
 			}
 		}
 	}
@@ -156,7 +156,6 @@ struct Map* generate_map(char* directory){
 		fprintf(stderr, "Error, directory did not contain sufficient number of room files\n");
 		exit(1);
 	};
-	printf("files found: %d\n", count);
 	chdir(directory);
 	int i;
 	for (i = 0; i < PLAY_ROOMS; i++){
@@ -176,14 +175,23 @@ struct Map* generate_map(char* directory){
 	map->game_state = 1;
 	return map;
 }
-
+int find_room(char* name, struct Room rooms[PLAY_ROOMS]){
+	int i;
+	for (i = 0; i < PLAY_ROOMS; i++){
+		if (strcmp(name, rooms[i].name) == 0){
+			return i;
+		}
+	}
+	return -1;
+}
 void game_loop(struct Map* map){
 	int player = map->room_start;
+	int total_steps = 0;
+	int player_history[256];
 	int goal_room = map->room_end;
-	printf("cheating: start is %d\n", player);
-	printf("cheating: end ins %d\n", goal_room);
-
-	while(map->game_state == 1){
+	char user_input[BUFFER];
+	
+	do{
 		printf("CURRENT LOCATION: %s\n", map->rooms[player].name);
 		printf("POSSIBLE CONNECTIONS:");
 		int i;
@@ -193,19 +201,40 @@ void game_loop(struct Map* map){
 		printf(" %s.\n", map->rooms[player].connections[i]);
 		printf("WHERE TO? >");
 
-		if (goal_room < player){
-			player -= 1;
+		memset(user_input, '\0', BUFFER);
+		scanf("%255s", user_input);
+		printf("\n");
+		
+		/*handle time*/
+		/*handle movement*/
+		int destination = -1;
+		for (i = 0; i < map->rooms[player].numConnections; i++){
+			if (strcmp(user_input, map->rooms[player].connections[i]) == 0){
+				destination = find_room(user_input, map->rooms);
+				break;
+			}
+		}
+		if (destination >= 0){
+			player_history[total_steps] = destination;
+			player = destination;
+			total_steps += 1;
 		}
 		else{
-			player += 1;
+			printf("HUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN. \n\n");
 		}
-		printf("\n");
+
 		if (player == goal_room){
 			map->game_state = 0;
-		}		
-	}
+		}
+	} while(map->game_state == 1);
 
-	printf("oh shit, you won!\n");
+	player_history[total_steps] = player;
+	printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+	printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS: \n", total_steps);
+	int i;
+	for (i = 0; i < total_steps; i++){
+		printf("%s\n", map->rooms[player_history[i]].name);
+	}
 }
 int main(){
 	char* my_dir = get_most_recent();
